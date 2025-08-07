@@ -1,0 +1,4 @@
+model_dir: /data/liuxb/code/MMoE/question_generator/checkpoints/hotpot
+
+dataset_dict_file: /data3/liuxb/datasets/Wiki/psgs_w100_dict.json
+test_dataset_file: /home/liuxb/code/MMoE/response/SQuAD_rerank.json

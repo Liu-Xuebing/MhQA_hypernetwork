@@ -1,0 +1,30 @@
+#model_dir
+model_name: "meta-llama/Llama-2-7b-hf"   # meta-llama/Llama-2-7b-hf, "EleutherAI/gpt-j-6B"
+hypernetwork_ckpt: /disk/liuxb/code/Multi-EMoE/{}_{}_{}_hypernetwork.pth
+
+pre_train_NQ_datasets: /disk/liuxb/datasets/NQ/NQ_train_results.json
+pre_train_TQA_datasets: /disk/liuxb/datasets/TQA/TQA_train_results.json
+
+#dataset
+data_name: TQA
+NQ_dataset: /disk/liuxb/datasets/NQ/NQ_test_rerank_results.json
+MQuAKE_dataset: /disk/liuxb/datasets/MQuAKE/MQuAKE-CF-3k-v2.json
+
+#model
+half: False
+train_batch_size: 1
+valid_batch_size: 1
+
+#train
+learning_rate: 1e-4
+learning_rate_min: 1e-6
+single_layer: 0
+num_experts: 1
+
+#parameter
+embed_feature: 4096
+#in_feature: 4096
+#hid_feature: 4096
+#out_feature: 4096
+#rank: 512
+step: 10
