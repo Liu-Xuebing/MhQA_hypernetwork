@@ -1,18 +1,26 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-tokenizer = AutoTokenizer.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-mquake")
-model = AutoModelForCausalLM.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-mquake",
+tokenizer = AutoTokenizer.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-WikiMhQA")
+model = AutoModelForCausalLM.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-WikiMhQA",
                                              device_map="auto")
 
 
 prompt = ("Decompose the following question into sub-questions:\n"
-          "What is the capital city of the country where the founder of Mike Mignola's employer holds citizenship?\nSub-questions:")
+          "What nationality is the composer of film Sayanna Varthakal?\n")
 inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-outputs = model.generate(**inputs, max_new_tokens=64)
+outputs = model.generate(**inputs, max_new_tokens=64, eos_token_id=tokenizer.eos_token_id)
 
-
+print(outputs)
 
 output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-output = output.split('\n\n')[0]
-print(output.split('Sub-questions: ')[1].split('\n'))
+print(output)
+output = output.split('sub-answer:')[0]
+
+# prompt =output + 'sub-answer: Michael Jace'
+# inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+# outputs = model.generate(**inputs, max_new_tokens=64)
+# output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+# print(output)
+# print(output.split('Sub-questions: ')[1].split('\n'))
+

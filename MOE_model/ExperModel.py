@@ -106,26 +106,26 @@ class MoE(nn.Module):
 
 
             for i, expert in enumerate(self.experts):
-                d = delta[i]
+                d = delta
                 j = 0
-                d1 = d[:, j:j + r * in_d].view(-1, r, in_d)
+                d1 = d[j:j + r * in_d].view(r, in_d)
                 j += r * in_d
-                d2 = d[:, j:j + h_d * r].view(-1, h_d, r)
+                d2 = d[j:j + h_d * r].view(h_d, r)
                 j += h_d * r
-                d3 = d[:, j:j + r2 * h2].view(-1, r2, h2)
+                d3 = d[j:j + r2 * h2].view(r2, h2)
                 j += r2 * h2
-                d4 = d[:, j:j + o_d * r].view(-1, o_d, r)
+                d4 = d[j:j + o_d * r].view(o_d, r)
 
-                W1 = expert.hidden_layer_u.weight.unsqueeze(0) + d1.to(x.device)
-                W2 = expert.hidden_layer_v.weight.unsqueeze(0) + d2.to(x.device)
-                W3 = expert.output_layer_u.weight.unsqueeze(0) + d3.to(x.device)
-                W4 = expert.output_layer_v.weight.unsqueeze(0) + d4.to(x.device)
+                W1 = expert.hidden_layer_u.weight + d1.to(x.device)
+                W2 = expert.hidden_layer_v.weight + d2.to(x.device)
+                W3 = expert.output_layer_u.weight + d3.to(x.device)
+                W4 = expert.output_layer_v.weight + d4.to(x.device)
 
-                x_proj = F.linear(x, W1.squeeze(0))
-                x_proj = F.linear(x_proj, W2.squeeze(0))
+                x_proj = F.linear(x, W1)
+                x_proj = F.linear(x_proj, W2)
                 x_proj = expert.activation(x_proj)
-                x_proj = F.linear(x_proj, W3.squeeze(0))
-                x_proj = F.linear(x_proj, W4.squeeze(0))
+                x_proj = F.linear(x_proj, W3)
+                x_proj = F.linear(x_proj, W4)
 
                 output += x_proj * scores[i]
             return output
@@ -139,9 +139,14 @@ class ParallelFFNMoE(nn.Module):
         self.ffn = ffn
         self.moes = moes
 
-    def forward(self, x, step=None):
-        out_main  = self.ffn(x)
-        out_denoised = self.moes(x, step)
-        outputs = out_main + out_denoised
-
-        return outputs, out_denoised, x
+    def forward(self, x, id, weight, delta):
+        if id > 0 and x.size(1) != 1:
+            output_ffn_front = self.ffn(x[:, :id, :])
+            output_ffn_back = self.ffn(x[:, id:, :])
+            outputs_moe = self.moes(x[:, id:, :], weight, delta)
+            outputs = torch.cat((output_ffn_front, output_ffn_back + outputs_moe), dim=1)
+        else:
+            output_ffn = self.ffn(x)
+            outputs_moe = self.moes(x, weight, delta)
+            outputs = output_ffn + outputs_moe
+        return outputs

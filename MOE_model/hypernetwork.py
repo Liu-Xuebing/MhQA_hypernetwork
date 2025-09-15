@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-
+#
 class EnhancedHyperNetwork(nn.Module):
     def __init__(self,
                  embed_dim: int,         # 输入知识向量维度
@@ -11,8 +11,10 @@ class EnhancedHyperNetwork(nn.Module):
                  hidden_dim: int,        # expert 隐层维度
                  output_dim: int,        # expert 输出维度
                  num_heads: int = 4,     # 多头注意力个数
-                 hidden_size: int = 256, # hypernet 隐层宽度
-                 num_basis: int = 8      # basis 个数（建议 4~16）
+                 hidden_size: int = 2048, # hypernet 隐层宽度
+                 num_basis: int = 8,
+                 dropout: int = 0.1,
+                 num_layers = 2# basis 个数（建议 4~16）
     ):
 
         super().__init__()
@@ -24,8 +26,10 @@ class EnhancedHyperNetwork(nn.Module):
         self.num_basis = num_basis
 
         # --------- 1. Knowledge Encoder (Self-Attention) ---------
-        self.attn_proj = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
-        self.attn_norm = nn.LayerNorm(embed_dim)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dropout=dropout, batch_first=True)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
 
         # --------- 2. Feedforward HyperNetwork Core ---------
         self.ffn = nn.Sequential(
@@ -63,9 +67,12 @@ class EnhancedHyperNetwork(nn.Module):
         输出：拼接后的专家参数向量 [B, Total_Params]
         """
         # --------- Step 1: Encode Knowledge ---------
-        attn_output, _ = self.attn_proj(x_embed, x_embed, x_embed)  # shape: [B, T, D]
-        x_encoded = self.attn_norm(attn_output + x_embed)
-        pooled = x_encoded.mean(dim=1)  # shape: [B, D]
+        B = x_embed.size(0)
+        cls_tokens = self.cls_token.expand(B, -1, -1)  # [B, 1, D]
+        x_with_cls = torch.cat([cls_tokens, x_embed], dim=1)  # [B, 1+T, D]
+        attn_output = self.transformer(x_with_cls)
+
+        pooled = attn_output[:, 0, :]  # [B, D]
 
         # --------- Step 2: Feedforward Layers ---------
         h = self.ffn(pooled)  # shape: [B, H]
@@ -85,11 +92,11 @@ class EnhancedHyperNetwork(nn.Module):
 
         # --------- Step 5: Flatten as Expert Delta Parameters ---------
         # 最终拼接为一维向量输出
-        delta_params = torch.cat([
-            u1.flatten(start_dim=1),
-            v1.flatten(start_dim=1),
-            u2.flatten(start_dim=1),
-            v2.flatten(start_dim=1)
-        ], dim=-1)  # shape: [B, total_params]
-
+        # delta_params = torch.cat([
+        #     u1.flatten(start_dim=1),
+        #     v1.flatten(start_dim=1),
+        #     u2.flatten(start_dim=1),
+        #     v2.flatten(start_dim=1)
+        # ], dim=-1)  # shape: [B, total_params]
+        delta_params = [u1.squeeze(), v1.squeeze(), u2.squeeze(), v2.squeeze()]
         return delta_params

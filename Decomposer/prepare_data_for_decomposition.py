@@ -12,7 +12,7 @@ class Decomposer_Dataset(Dataset):
         self.data = []
 
         if config.data_name in ["MQuAKE", "MQuAKE-T"]:
-            with open(config.MQuAKE_train_dataset) as train_data:
+            with open(config.train_dataset) as train_data:
                 datas = json.load(train_data)
             for data in datas:
                 question = data["question"]
@@ -23,12 +23,18 @@ class Decomposer_Dataset(Dataset):
                     new_sub_question.append(sq.replace(sa, '{}', 1))
                 self.data.append((question, new_sub_question))
 
-        if config.data_name == 'hotpot':
-            with open(config.HotPot_train_dataset) as train_data:
+        if config.data_name in ['hotpot', 'HotPot', 'WikiMhQA']:
+            with open(config.train_dataset) as train_data:
                 datas = json.load(train_data)
             for data in datas:
-                for q, a, p in zip(data['sub_question'], data['sub_answer'], data['facts']):
-                    self.data.append([q, a, p])
+                question = data["question"]
+                input = "Question: {}".format(question)
+                sub_questions = data["sub_question"]
+                sub_answers = data["sub_answer"]
+                output = ''
+                for sq, sa in zip(sub_questions, sub_answers):
+                    output += 'Sub-question: {}\nSub-answer: {}\n'.format(sq, sa)
+                self.data.append((input, output))
 
 
     def __len__(self):
@@ -38,22 +44,21 @@ class Decomposer_Dataset(Dataset):
     def __getitem__(self, idx):
         question, sub_questions  = self.data[idx]
         input = ('Decompose the following question into sub-questions:\n'
-                 '{}\n'
-                 'Sub-questions:').format(question)
-        answer = '\n'.join(["{}".format(sq) for sq in sub_questions]) +'\n\n'
-        tok_tuples = self.tok_tuples(input, answer)
+                 '{}\n').format(question)
+        tok_tuples = self.tok_tuples(input, sub_questions)
         return tok_tuples
 
 
 
     def tok_tuples(self, prompt, answer):
         if self.config.model_name == 'tiiuae/Falcon3-1B-Base':
-            answer = " "+answer
+            answer = answer + self.tok.eos_token
         else:
             raise AssertionError("Error model")
 
         tok_prompt = self.tok(prompt, return_tensors="pt")
         tok_answer = self.tok(answer, return_tensors="pt", add_special_tokens=False)
+
 
         tok_tuples = {
             key: torch.cat((value, tok_answer[key][:, :-1]), -1)

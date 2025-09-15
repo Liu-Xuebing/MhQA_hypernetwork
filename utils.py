@@ -1,11 +1,11 @@
 import json
 import os
-from cProfile import label
 from collections import Counter
 import torch
 import torch.nn.functional as F  # 用于计算 softmax
 import numpy as np
 import random
+from tqdm import tqdm
 
 
 WHITESPACE_AND_PUNCTUATION = {' ', '.', ',', ':', ';', '!', '?', '$', '%', '(', ')', '[', ']', '-', '`', '\'', '"'}
@@ -144,6 +144,7 @@ def CleanAnswer(answer):
 #             index = key
 #     return index
 
+
 def vector_loss(w_M, wo_M, label_w, label_wo):
     w_M = w_M.to(label_w.device)
     wo_M = wo_M.to(label_wo.device)
@@ -161,12 +162,20 @@ def cross_entropy(
 ):
     if len(logits.shape) == 2:
         return F.binary_cross_entropy_with_logits(logits, labels)
-
     if len(logits.shape) == 3:
         ans_indice = torch.where(labels != -100)
         logits = logits[ans_indice]
         labels = labels[ans_indice]
         return F.cross_entropy(logits, labels)
+
+
+def get_word(logits, labels, tok):
+    ans_indice = torch.where(labels != -100)
+    logits = logits[ans_indice]
+    pred_ids = logits.argmax(dim=-1)  # [B, T]
+    pred_texts = tok.batch_decode(pred_ids, skip_special_tokens=True)
+    return ''.join(pred_texts)
+
 
 
 def kl_divergence(p, q, label_p, label_q):
@@ -187,3 +196,32 @@ def first_word_cap(text):
     words[0] = words[0].capitalize()
     text = " ".join(words)
     return text
+
+
+def mean_pooling(token_embeddings, mask):
+    token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.)
+    sentence_embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
+    return sentence_embeddings
+
+
+def get_sent_embeddings(sents, contriever, tok, BSZ=32):
+    all_embs = []
+    for i in tqdm(range(0, len(sents), BSZ)):
+        sent_batch = sents[i:i+BSZ]
+        inputs = tok(sent_batch, padding=True, truncation=True, return_tensors='pt').to("cuda")
+        with torch.no_grad():
+            outputs = contriever(**inputs)
+            embeddings = mean_pooling(outputs[0], inputs['attention_mask'])
+        all_embs.append(embeddings.cpu())
+    all_embs = torch.vstack(all_embs)
+    return all_embs
+
+
+def retrieve_facts(query, fact_embs, contriever, tok, k=1):
+    inputs = tok([query], padding=True, truncation=True, return_tensors='pt').to("cuda")
+    with torch.no_grad():
+        outputs = contriever(**inputs)
+        query_emb = mean_pooling(outputs[0], inputs['attention_mask']).cpu()
+    sim = (query_emb @ fact_embs.T)[0]
+    knn = sim.topk(k, largest=True)
+    return knn.indices
