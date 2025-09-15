@@ -5,4 +5,4 @@ Training file:
 train.py
 
 Inference file:
-inference.py 
+inference.py
