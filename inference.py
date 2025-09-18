@@ -51,7 +51,7 @@ def model_generation_subanswer(input, input_id, model, tok):
                             temperature=1.0,
                             top_p=1.0,)
     predict = tok.decode(output[0], skip_special_tokens=True)
-    return predict[len(input):].strip()
+    return predict[len(input):].split('\n')[0].strip()
 
 
 
@@ -101,7 +101,8 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     base_input = initial_prompt.strip() + '\nQuestion: {}\nAnswer:'.format(question)
                     base_input = base_input[split_index:]
                     base_input_token = {k: v.cuda() for k, v in tok(base_input, return_tensors="pt").items()}
-                    input_embeds = model.model.embed_tokens(base_input_token['input_ids'])
+                    passage_input_token = {k: v.cuda() for k, v in tok(initial_prompt.strip()[split_index:], return_tensors="pt").items()}
+                    input_embeds = model.model.embed_tokens(passage_input_token['input_ids'])
                     delta = hypernetwork(input_embeds)
                     fuse_delta = []
                     for A, B in zip(use_delta, delta):

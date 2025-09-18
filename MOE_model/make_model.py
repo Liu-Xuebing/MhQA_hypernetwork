@@ -19,5 +19,7 @@ def replace_layer(config, model, original_layer, layer_index):
     moes = MoE(config.in_feature, config.hid_feature, config.out_feature, config.rank, num_experts=1)
     if "Llama" in config.model_name:
         model.model.layers[layer_index].mlp = ParallelFFNMoE(original_layer, moes).to(next(original_layer.parameters()).device)
+    elif "Qwen" in config.model_name:
+        model.model.layers[layer_index].mlp = ParallelFFNMoE(original_layer, moes).to(next(original_layer.parameters()).device)
     elif "gpt" in config.model_name:
         model.transformer.h[layer_index].mlp = ParallelFFNMoE(original_layer, moes).to(next(original_layer.parameters()).device)

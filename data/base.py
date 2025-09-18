@@ -15,20 +15,18 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
         self.samples = samples
         self.data = []
         if status=='Train':
-            if config.data_name == 'pre_train':
-                with open(config.pre_train_datasets) as train_data:
+            if config.data_name == 'scanning':
+                with open(config.layer_scanning_datasets) as train_data:
                     datas = json.load(train_data)
                 for data in datas:
                     self.data.append([data['question'], data['answer'], data['text']])
-
-            if config.data_name == 'MQuAKE' or config.data_name == 'MQuAKE-T':
+            elif config.data_name == 'MQuAKE' or config.data_name == 'MQuAKE-T':
                 with open(config.train_dataset) as train_data:
                     datas = json.load(train_data)
                 for data in datas:
                     for q, a, p in zip(data['sub_question'], data['sub_answer'], data['facts']):
                         self.data.append([q, a, p])
-
-            if config.data_name in ['HotPot', 'WikiMhQA']:
+            elif config.data_name in ['HotPot', 'WikiMhQA']:
                 with open(config.train_dataset.format(config.data_name)) as train_data:
                     datas = json.load(train_data)
                 for data in datas:
@@ -38,8 +36,7 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
                         prompt += "Sub-question: {}\nSub-answer: {}\n".format(q, a)
                     self.data.append([data['question'], data['answer'], prompt.strip()])
 
-
-            if self.samples is not None:
+            if self.samples:
                 self.data = random.sample(self.data, k=self.samples)
 
 
@@ -102,8 +99,8 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
             answer = " " + answer + self.tok.eos_token
         elif self.config.model_name == "baichuan-inc/Baichuan2-7B-Base":
             answer = answer
-        elif self.config.model_name == "Qwen/Qwen2.5-7B-Instruct":
-            answer = answer
+        elif self.config.model_name == "Qwen/Qwen2.5-7B":
+            answer = answer + self.tok.eos_token
         else:
             raise AssertionError("Error model")
 
