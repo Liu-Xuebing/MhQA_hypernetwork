@@ -1,12 +1,12 @@
 #model_dir
-model_name: Qwen/Qwen2.5-7B  #meta-llama/Llama-3.1-8B  Qwen/Qwen2.5-7B
+model_name: meta-llama/Llama-3.1-8B  #meta-llama/Llama-3.1-8B  Qwen/Qwen2.5-7B
 hypernetwork_ckpt: /disk/liuxb/code/Multi-EMoE/{}_{}_hypernetwork.pth
-retrieval_model_ckpt: "facebook/contriever-msmarco"
+retrieval_model_ckpt: "facebook/contriever-msmarco"  # intfloat/e5-base-v2, facebook/contriever-msmarco
 decompose_model_ckpt: /disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-{}
 
 #dataset
-data_name: HotPot
-layer_scanning_datasets: /disk/liuxb/code/Multi-EMoE/datasets/causal_tracing.json
+data_name: scanning
+layer_scanning_datasets: /disk/liuxb/code/Multi-EMoE/datasets/pre_training.json
 train_dataset: /disk/liuxb/code/Multi-EMoE/datasets/{}_train.json
 test_dataset: /disk/liuxb/code/Multi-EMoE/datasets/{}_test.json
 
@@ -19,13 +19,13 @@ valid_batch_size: 1
 learning_rate: 1e-4
 deberta_lr: 1e-5
 learning_rate_min: 1e-6
-single_layer: [0] #Inserting an expert layer
+single_layer: [6] #Inserting an expert layer
 
 #parameter
-embed_feature: 3584  # 3584 if Qwen model
-in_feature: 3584
-hid_feature: 3584
-out_feature: 3584
+embed_feature: 4096  # 3584 if Qwen model
+in_feature: 4096
+hid_feature: 4096
+out_feature: 4096
 rank: 512
 
 #hyper-parameter
