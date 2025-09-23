@@ -1,13 +1,13 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-tokenizer = AutoTokenizer.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-WikiMhQA")
-model = AutoModelForCausalLM.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-WikiMhQA",
+tokenizer = AutoTokenizer.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-musique")
+model = AutoModelForCausalLM.from_pretrained("/disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-musique",
                                              device_map="auto")
 
 
 prompt = ("Decompose the following question into sub-questions:\n"
-          "What nationality is the composer of film Sayanna Varthakal?\n")
+          "How long had Pfrang Association's headquarters location been the capitol city of Yaxing Coach's headquarters location?\n")
 inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 outputs = model.generate(**inputs, max_new_tokens=64, eos_token_id=tokenizer.eos_token_id)
 

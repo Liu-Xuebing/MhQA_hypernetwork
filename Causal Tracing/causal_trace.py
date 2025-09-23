@@ -160,7 +160,7 @@ def plot_hidden_flow(
 
     result = calculate_hidden_flow(
         mt, text_prompt, question_prompt, answer, window=window, kind=kind)
-    with open("{}/{}_{}.json".format(savepdf, kind, indexi), "w") as f:
+    with open("{}/{}_{}.json".format(savepdf, kind, indexi), "without Hypernetwork") as f:
         json.dump([{"scores": result['scores'].tolist(),
                         "high_score": result['high_score'].tolist(),
                         "low_score": result['low_score'].tolist()}], f, ensure_ascii=False, indent=4)

@@ -9,8 +9,9 @@ import torch
 import json
 from utils import get_sent_embeddings, retrieve_facts, get_word
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-from train import get_word
+import time
 import os
+
 
 
 def question_decomposition(prompt, model, tok):
@@ -93,7 +94,7 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
         question, answers, _ = tuples
         initial_prompt = 'Decompose the following question into sub-questions:\n{}\n'.format(question)
         split_index = len(initial_prompt)
-        ix = 0
+        ixx = 0
         try:
             while True:
                 subquestion, prompt = question_decomposition(initial_prompt, decomposer, decomposer_tok)
@@ -113,29 +114,34 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     final_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                     inference_hook.remove()
                     break
-                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok)
-                fact = facts[fact_ids[0]]
-                tok_fact = {k: v.cuda() for k, v in tok(fact, return_tensors="pt").items()}
-                input_embeds = model.model.embed_tokens(tok_fact['input_ids'])  # shape(batchsize, length, embedding_dim:4096)
-                for layer_index in config.single_layer:
+                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=3)
+                sub_level_delta = None
+                for i in range(len(fact_ids)):
+                    fact = facts[fact_ids[i]]
+                    tok_fact = {k: v.cuda() for k, v in tok(fact, return_tensors="pt").items()}
+                    input_embeds = model.model.embed_tokens(tok_fact['input_ids'])
                     delta = hypernetwork(input_embeds)
-                    if ix == 0:
-                        use_delta = delta
-                        inference_hook = (model.model.layers[layer_index].mlp.
-                                          register_forward_pre_hook(create_pre_hook_fn(0, [1], param_flatten(use_delta))))
+                    if sub_level_delta is None:
+                        sub_level_delta = [d.clone() for d in delta]
+                    else:
+                        for ix, (A, B) in enumerate(zip(sub_level_delta, delta)):
+                            sub_level_delta[ix] = fuse_weights(A, B)  # shape(batchsize, length, embedding_dim:4096)
+
+                for layer_index in config.single_layer:
+                    if ixx == 0:
+                        use_delta = sub_level_delta
                     else:
                         fuse_delta = []
-                        for A,B in zip(use_delta, delta):
+                        for A,B in zip(use_delta, sub_level_delta):
                             fuse_delta.append(fuse_weights(A, B))
                         use_delta = fuse_delta
-                        inference_hook = (model.model.layers[layer_index].mlp.
-                                          register_forward_pre_hook(create_pre_hook_fn(0, [1], param_flatten(use_delta))))
-                base_input = 'Passage: {}\nQuestion: {}\nAnswer:'.format(fact, subquestion)
+                    inference_hook = (model.model.layers[layer_index].mlp.register_forward_pre_hook(create_pre_hook_fn(0, [1], param_flatten(use_delta))))
+                base_input = 'Passage: {}\nQuestion: {}\nAnswer:'.format('. '.join([facts[fact_ids[i]] for i in range(len(fact_ids))]), subquestion)
                 base_input_token = {k: v.cuda() for k, v in tok(base_input, return_tensors="pt").items()}
                 sub_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                 inference_hook.remove()
                 initial_prompt = prompt + '\n' + 'Sub-answer: {}\n'.format(sub_answer)
-                ix+=1
+                ixx+=1
         except Exception as e:
             final_answer = ''
         print(final_answer)

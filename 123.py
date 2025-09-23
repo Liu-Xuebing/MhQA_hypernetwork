@@ -45,7 +45,7 @@ random.seed(88)
 #             all_datas.append({'question': question, 'answer': answer, 'text': text})
 #             break
 #
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/TQA.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/TQA.json", "without Hypernetwork") as f:
 #     json.dump(all_datas, f, ensure_ascii=False, indent=4)
 #
 # print(len(all_datas))
@@ -63,7 +63,7 @@ random.seed(88)
 # # print(all_datas[0])
 #
 # new_data = all_datas[71354:72354]
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/causal_tracing.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/causal_tracing.json", "without Hypernetwork") as f:
 #     json.dump(new_data, f, ensure_ascii=False, indent=4)
 # print(len(all_datas))
 # import matplotlib.pyplot as plt
@@ -167,7 +167,7 @@ random.seed(88)
 # print(len(new_datas))
 # #
 # #
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/MQuAKE-T_test.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/MQuAKE-T_test.json", "without Hypernetwork") as f:
 #     json.dump(new_datas, f, ensure_ascii=False, indent=4)
 
 
@@ -238,7 +238,7 @@ random.seed(88)
 # #
 # random.shuffle(new_datas)
 # print(len(new_datas))
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/HotPot_test.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/HotPot_test.json", "without Hypernetwork") as f:
 #     json.dump(new_datas, f, ensure_ascii=False, indent=4)
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # with open('/disk/liuxb/datasets/2WikiMultihopQA/train.json', 'r') as f:
@@ -259,7 +259,7 @@ random.seed(88)
 #                       'facts': facts,
 #                       'evidences': data['evidences']})
 #
-# with open("/disk/liuxb/code/Multi-EMoE/data/WikiMhQA_pre_train.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/data/WikiMhQA_pre_train.json", "without Hypernetwork") as f:
 #     json.dump(new_datas, f, ensure_ascii=False, indent=4)
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -280,7 +280,7 @@ random.seed(88)
 #                       'answer_alias': [],
 #                       'facts': facts})
 #
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/WikiMhQA_test.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/WikiMhQA_test.json", "without Hypernetwork") as f:
 #     json.dump(new_datas, f, ensure_ascii=False, indent=4)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ random.seed(88)
 # #
 # random.shuffle(new_datas)
 # print(len(new_datas))
-# with open("/disk/liuxb/code/Multi-EMoE/datasets/HotPot_train.json", "w") as f:
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/HotPot_train.json", "without Hypernetwork") as f:
 #     json.dump(new_datas, f, ensure_ascii=False, indent=4)
 
 # with open('/disk/liuxb/datasets/HotpotQA/hotpot_train.json', 'r') as f:
@@ -432,44 +432,106 @@ import matplotlib.pyplot as plt
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-import matplotlib.pyplot as plt
-import numpy as np
+# import matplotlib.pyplot as plt
+# import numpy as np
+#
+# # 数据
+# metrics = ["EM", "F1"]
+# rag_scores = [4.48, 9.27]
+# srke_scores = [50.30, 51.36]
+#
+# # 颜色 (归一化到 0-1)
+# rag_color = (255/255, 153/255, 153/255)   # 粉色
+# srke_color = (180/255, 199/255, 231/255)  # 浅蓝
+#
+# # 组位置（组间间隔设置大一点）
+# group_x = np.array([0, 2])
+#
+# # 组内间隔
+# offset = 0.2
+# width = 0.3  # 每个柱子宽度
+#
+# fig, ax = plt.subplots(figsize=(6, 4))
+#
+# # 绘制柱子：每组里分别偏移
+# ax.bar(group_x - offset, rag_scores, width, label="RAG", color=rag_color)
+# ax.bar(group_x + offset, srke_scores, width, label="SRKE-RAG", color=srke_color)
+#
+# # 设置坐标轴标签
+# ax.set_ylabel("Score",fontsize=16)
+# ax.set_xticks(group_x)
+# ax.set_xticklabels(metrics, fontsize=16)
+# ax.legend()
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+#
+# # 保留底边和左边，设置线宽更细（论文风）
+# ax.spines['bottom'].set_linewidth(0.8)
+# ax.spines['left'].set_linewidth(0.8)
+#
+# plt.tight_layout()
+# plt.savefig('introduction.png')
+#------------------------------------------------------------------------------------------------------
+# datas = []
+# with open('/disk/liuxb/datasets/musique/data/musique_full_v1.0_train.jsonl', 'r') as f:
+#     for line in f:
+#         datas.append(json.loads(line))
+# random.shuffle(datas)
+#
+#
+# new_data = []
+#
+# print(len(datas))
+# for data in datas:
+#     if data["answerable"]:
+#         question = (data['question'])
+#         answer = data['answer']
+#         answer_alias = data['answer_aliases']
+#         sub_question = []
+#         sub_answer = []
+#         facts = []
+#         for ix,de in enumerate(data['question_decomposition']):
+#             if "#{}".format(ix) in de['question']:
+#                 sub_question.append(de['question'].replace("#{}".format(ix), data['question_decomposition'][ix-1]['answer']))
+#             else:
+#                 sub_question.append(de['question'])
+#             sub_answer.append(de['answer'])
+#             facts.append(data['paragraphs'][de['paragraph_support_idx']]['title']+': '+ data['paragraphs'][de['paragraph_support_idx']]['paragraph_text'])
+#
+#         new_data.append({'question': question,
+#                          'answer': answer,
+#                          'answer_alias': answer_alias,
+#                          'sub_question': sub_question,
+#                          'sub_answer': sub_answer,
+#                          'facts': facts})
+# print(len(new_data))
+# with open("/disk/liuxb/code/Multi-EMoE/datasets/musique_train.json", 'w') as f:
+#     json.dump(new_data, f, ensure_ascii=False, indent=4)
+#---------------------------------------------------------------------------------------------------------------------
+datas = []
+with open('/disk/liuxb/datasets/musique/data/musique_ans_v1.0_dev.jsonl', 'r') as f:
+    for line in f:
+        datas.append(json.loads(line))
+random.shuffle(datas)
 
-# 数据
-metrics = ["EM", "F1"]
-rag_scores = [4.48, 9.27]
-srke_scores = [50.30, 51.36]
 
-# 颜色 (归一化到 0-1)
-rag_color = (255/255, 153/255, 153/255)   # 粉色
-srke_color = (180/255, 199/255, 231/255)  # 浅蓝
+new_data = []
 
-# 组位置（组间间隔设置大一点）
-group_x = np.array([0, 2])
+for data in datas[:1000]:
 
-# 组内间隔
-offset = 0.2
-width = 0.3  # 每个柱子宽度
+    question = (data['question'])
+    answer = data['answer']
+    answer_alias = data['answer_aliases']
 
-fig, ax = plt.subplots(figsize=(6, 4))
+    facts = []
+    for f in data['paragraphs']:
+        facts.append(f['title'] + ': ' + f['paragraph_text'])
 
-# 绘制柱子：每组里分别偏移
-ax.bar(group_x - offset, rag_scores, width, label="RAG", color=rag_color)
-ax.bar(group_x + offset, srke_scores, width, label="SRKE-RAG", color=srke_color)
+    new_data.append({'question': question,
+                     'answer': answer,
+                     'answer_alias': answer_alias,
+                     'facts': facts})
 
-# 设置坐标轴标签
-ax.set_ylabel("Score",fontsize=16)
-ax.set_xticks(group_x)
-ax.set_xticklabels(metrics, fontsize=16)
-ax.legend()
-
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-
-# 保留底边和左边，设置线宽更细（论文风）
-ax.spines['bottom'].set_linewidth(0.8)
-ax.spines['left'].set_linewidth(0.8)
-
-plt.tight_layout()
-plt.savefig('introduction.png')
-
+with open("/disk/liuxb/code/Multi-EMoE/datasets/musique_test.json", 'w') as f:
+    json.dump(new_data, f, ensure_ascii=False, indent=4)

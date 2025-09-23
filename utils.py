@@ -6,21 +6,12 @@ import torch.nn.functional as F  # 用于计算 softmax
 import numpy as np
 import random
 from tqdm import tqdm
+from elasticsearch import Elasticsearch
 
 
 WHITESPACE_AND_PUNCTUATION = {' ', '.', ',', ':', ';', '!', '?', '$', '%', '(', ')', '[', ']', '-', '`', '\'', '"'}
 ARTICLES = {'the', 'a', 'an'}
 
-# sub_dataset_expert = []
-# with open('/data3/liuxb/datasets/NQ/NQ_test_rerank_results.json') as f:
-#     datas =  json.load(f)
-# for data in datas:
-#     ctx = data['ctxs'][:4]
-#     for c in ctx:
-#         if os.path.exists(os.path.join('/data/liuxb/code/MMoE/syn_knowledge/NQ_MoE_lib_Lft', '{}.pth'.format(c['id'][len('wiki:'):]))):
-#             sub_dataset_expert.append('{}'.format(c['id']))
-# sub_dataset_expert = list(set(sub_dataset_expert))
-# print(len(sub_dataset_expert))
 
 def set_seed(seed: int = 42):
     # Python random 模块
@@ -44,7 +35,7 @@ def tansfer_to_scftmax(list):
     return softmax_values
 
 def write_json(x, path):
-    with open(path, "w") as f:
+    with open(path, "without Hypernetwork") as f:
         f.write(json.dumps(x, indent=4))
 
 
@@ -225,3 +216,79 @@ def retrieve_facts(query, fact_embs, contriever, tok, k=1):
     sim = (query_emb @ fact_embs.T)[0]
     knn = sim.topk(k, largest=True)
     return knn.indices
+
+
+
+
+class BM25Retriever:
+    def __init__(self, index_name="facts_index", host="http://localhost:9200"):
+        self.es = Elasticsearch(host)
+        print(self.es.info())
+        self.index_name = index_name
+
+    def create_index(self):
+        """创建索引，设置 content 字段为 text 类型（BM25 默认启用）"""
+        if self.es.indices.exists(index=self.index_name):
+            self.es.indices.delete(index=self.index_name)
+
+        self.es.indices.create(
+            index=self.index_name,
+            mappings={
+                "properties": {
+                    "content": {"type": "text"}
+                }
+            }
+        )
+
+    def add_documents(self, docs):
+        """批量写入文档，docs 是字符串列表"""
+        for i, doc in enumerate(docs):
+            self.es.index(index=self.index_name, id=i, document={"content": doc}, refresh=True)
+
+    def search(self, query, top_k=5):
+        """用 BM25 搜索 query，返回前 top_k 个结果"""
+        response = self.es.search(
+            index=self.index_name,
+            query={
+                "match": {
+                    "content": query
+                }
+            },
+            size=top_k
+        )
+        results = [
+            {"score": hit["_score"], "doc": hit["_source"]["content"]}
+            for hit in response["hits"]["hits"]
+        ]
+        return results
+
+
+# ================== 用法示例 ==================
+if __name__ == "__main__":
+    facts = [
+        "Alonso Mudarra: Alonso Mudarra( c. 1510 – April 1, 1580) was a Spanish composer of the Renaissance, and also played the vihuela, a guitar- shaped string instrument.",
+        "Alonso Mudarra: He was an innovative composer of instrumental music as well as songs, and was the composer of the earliest surviving music for the guitar.",
+        "Thomas Morse: Thomas Morse( born June 30, 1968) is an American composer of film and concert music.",
+        "Abe Meyer: Abe Meyer( 1901 – 1969) was an American composer of film scores.",
+        "Prashant Pillai: Prashant Pillai (born 8 September 1981) is a music producer and composer from India.",
+        "Bert Grund: Bert Grund( 1920–1992) was a German composer of film scores.",
+        "Tarcisio Fusco: Tarcisio Fusco was an Italian composer of film scores.",
+        "Cyril Chamberlain: Cyril Chamberlain (8 March 1909 – 5 December 1974) was an English film and television actor.",
+        "Walter Ulfig: Walter Ulfig was a German composer of film scores.",
+        "Amedeo Escobar: Amedeo Escobar( 1888–1973) was an Italian composer of film scores.",
+        "Sayanna Varthakal: Sayanna Varthakal  is an upcoming Indian Malayalam-language socio-political satire film written and directed by debutant Arun Chandu and produced by D14 Entertainments.",
+        "Sayanna Varthakal: Co-written by Sachin R Chandran and Rahul Menon, the film stars Gokul Suresh, Dhyan Sreenivasan, Aju Varghese and newcomer Sharanya Sharma in lead roles.",
+        "Sayanna Varthakal: The music of the film is composed by Prashant Pillai and the cinematography is handled by Sarath Shaji.",
+        "Sayanna Varthakal: It is reported that the movie tells the tale of a film actor and his life in a government-affiliated organisation.",
+        "Henri Verdun: Henri Verdun( 1895–1977) was a French composer of film scores."]
+
+    retriever = BM25Retriever()
+    retriever.create_index()
+    retriever.add_documents(facts)
+
+    query = "Was Cyril Chamberlain an English film and television actor?"
+    results = retriever.search(query, top_k=1)
+    print(results)
+    for r in results:
+        print(f"Score: {r['score']:.4f}, Doc: {r['doc']}")
+

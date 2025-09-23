@@ -9,8 +9,8 @@ import torch.nn.functional as F
 class Config:
     def __init__(self):
         self.train_batch_size = 4
-        self.train_dataset = '/disk/liuxb/code/Multi-EMoE/datasets/WikiMhQA_train.json'
-        self.data_name = 'WikiMhQA'
+        self.train_dataset = '/disk/liuxb/code/Multi-EMoE/datasets/musique_train.json'
+        self.data_name = 'musique'
         self.model_name = "tiiuae/Falcon3-1B-Base"
         self.num_epochs = 5
 

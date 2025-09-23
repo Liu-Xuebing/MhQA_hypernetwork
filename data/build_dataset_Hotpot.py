@@ -44,7 +44,7 @@ def convert_to_target_format(question, data_list, answer):
 
 
 def save_to_json(samples, filename="train.json"):
-    with open(filename, "w", encoding="utf-8") as f:
+    with open(filename, "without Hypernetwork", encoding="utf-8") as f:
         json.dump(samples, f, ensure_ascii=False, indent=4)
     print(f"✅ Saved {len(samples)} samples to {filename}")
 

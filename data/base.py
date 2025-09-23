@@ -26,7 +26,7 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
                 for data in datas:
                     for q, a, p in zip(data['sub_question'], data['sub_answer'], data['facts']):
                         self.data.append([q, a, p])
-            elif config.data_name in ['HotPot', 'WikiMhQA']:
+            elif config.data_name in ['HotPot', 'WikiMhQA', 'musique']:
                 with open(config.train_dataset.format(config.data_name)) as train_data:
                     datas = json.load(train_data)
                 for data in datas:
@@ -41,7 +41,7 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
 
 
         elif status == "Test":
-            if config.data_name in ['MQuAKE-CF', 'MQuAKE-T', 'HotPot', 'WikiMhQA']:
+            if config.data_name in ['MQuAKE-CF', 'MQuAKE-T', 'HotPot', 'WikiMhQA', 'musique']:
                 with open(config.test_dataset.format(config.data_name)) as test_data:
                     datas = json.load(test_data)
                 for data in datas:
@@ -93,12 +93,8 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
 
 
     def tok_tuples(self, prompt, answer, passage):
-        if self.config.model_name == 'meta-llama/Llama-2-7b-hf':
-            answer = answer
-        elif self.config.model_name == "meta-llama/Llama-3.1-8B":
+        if self.config.model_name == "meta-llama/Llama-3.1-8B":
             answer = " " + answer + self.tok.eos_token
-        elif self.config.model_name == "baichuan-inc/Baichuan2-7B-Base":
-            answer = answer
         elif self.config.model_name == "Qwen/Qwen2.5-7B":
             answer = answer + self.tok.eos_token
         else:

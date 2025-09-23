@@ -1,11 +1,11 @@
 #model_dir
-model_name: meta-llama/Llama-3.1-8B  #meta-llama/Llama-3.1-8B  Qwen/Qwen2.5-7B
+model_name: "meta-llama/Llama-3.1-8B"  #meta-llama/Llama-3.1-8B  Qwen/Qwen2.5-7B
 hypernetwork_ckpt: /disk/liuxb/code/Multi-EMoE/{}_{}_hypernetwork.pth
-retrieval_model_ckpt: "facebook/contriever-msmarco"  # intfloat/e5-base-v2, facebook/contriever-msmarco
+retrieval_model_ckpt: "intfloat/e5-base-v2"  # intfloat/e5-base-v2, facebook/contriever-msmarco
 decompose_model_ckpt: /disk/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-{}
 
 #dataset
-data_name: scanning
+data_name: HotPot
 layer_scanning_datasets: /disk/liuxb/code/Multi-EMoE/datasets/pre_training.json
 train_dataset: /disk/liuxb/code/Multi-EMoE/datasets/{}_train.json
 test_dataset: /disk/liuxb/code/Multi-EMoE/datasets/{}_test.json
@@ -17,7 +17,6 @@ valid_batch_size: 1
 
 #train
 learning_rate: 1e-4
-deberta_lr: 1e-5
 learning_rate_min: 1e-6
 single_layer: [6] #Inserting an expert layer
 
