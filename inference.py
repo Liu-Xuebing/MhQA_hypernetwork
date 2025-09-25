@@ -1,7 +1,7 @@
 from data.base import make_Validation_loader
 import numpy as np
 from tqdm import tqdm, trange
-from utils import cal_EM_F1
+from utils import cal_EM_F1, mean_pooling
 from MOE_model.make_model import make_main_model, replace_layer
 from MOE_model.hypernetwork import EnhancedHyperNetwork
 import hydra
@@ -114,7 +114,7 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     final_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                     inference_hook.remove()
                     break
-                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=3)
+                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=4)
                 sub_level_delta = None
                 for i in range(len(fact_ids)):
                     fact = facts[fact_ids[i]]
@@ -126,7 +126,6 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     else:
                         for ix, (A, B) in enumerate(zip(sub_level_delta, delta)):
                             sub_level_delta[ix] = fuse_weights(A, B)  # shape(batchsize, length, embedding_dim:4096)
-
                 for layer_index in config.single_layer:
                     if ixx == 0:
                         use_delta = sub_level_delta

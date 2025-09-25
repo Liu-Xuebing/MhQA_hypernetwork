@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+
+
 #
 class EnhancedHyperNetwork(nn.Module):
     def __init__(self,
@@ -14,7 +16,7 @@ class EnhancedHyperNetwork(nn.Module):
                  hidden_size: int = 2048, # hypernet 隐层宽度
                  num_basis: int = 8,
                  dropout: int = 0.1,
-                 num_layers = 2# basis 个数（建议 4~16）
+                 num_layers = 2
     ):
 
         super().__init__()
@@ -63,8 +65,7 @@ class EnhancedHyperNetwork(nn.Module):
 
     def forward(self, x_embed):  # x_embed: [B, T, D]
         """
-        x_embed: 外部知识的 token embedding（batch_size, seq_len, embed_dim）
-        输出：拼接后的专家参数向量 [B, Total_Params]
+        x_embed:  token embedding（batch_size, seq_len, embed_dim）
         """
         # --------- Step 1: Encode Knowledge ---------
         B = x_embed.size(0)
@@ -73,7 +74,8 @@ class EnhancedHyperNetwork(nn.Module):
         attn_output = self.transformer(x_with_cls)
 
         pooled = attn_output[:, 0, :]  # [B, D]
-
+        # pooled = torch.mean(x_embed, dim=1, keepdim=True)
+        # print(pooled)
         # --------- Step 2: Feedforward Layers ---------
         h = self.ffn(pooled)  # shape: [B, H]
 

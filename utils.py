@@ -7,7 +7,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 from elasticsearch import Elasticsearch
-
+from elasticsearch.helpers import bulk
 
 WHITESPACE_AND_PUNCTUATION = {' ', '.', ',', ':', ';', '!', '?', '$', '%', '(', ')', '[', ']', '-', '`', '\'', '"'}
 ARTICLES = {'the', 'a', 'an'}
@@ -240,10 +240,25 @@ class BM25Retriever:
             }
         )
 
+    def unlock_index(self):
+        """解除只读限制（需要在释放磁盘空间后调用）"""
+        self.es.indices.put_settings(
+            index=self.index_name,
+            body={"index.blocks.read_only_allow_delete": None}
+        )
+
+
     def add_documents(self, docs):
-        """批量写入文档，docs 是字符串列表"""
-        for i, doc in enumerate(docs):
-            self.es.index(index=self.index_name, id=i, document={"content": doc}, refresh=True)
+        actions = [
+            {"_index": self.index_name, "_id": i, "_source": {"content": doc}}
+            for i, doc in enumerate(docs)
+        ]
+        bulk(self.es, actions, refresh="true")  # 最后一次性 refresh
+
+    # def add_documents(self, docs):
+    #     """批量写入文档，docs 是字符串列表"""
+    #     for i, doc in enumerate(docs):
+    #         self.es.index(index=self.index_name, id=i, document={"content": doc}, refresh=True)
 
     def search(self, query, top_k=5):
         """用 BM25 搜索 query，返回前 top_k 个结果"""

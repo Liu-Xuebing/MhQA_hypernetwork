@@ -69,8 +69,6 @@ def main(config):
                                         input_dim = config.in_feature,
                                         hidden_dim = config.hid_feature,
                                         output_dim = config.out_feature).cuda()
-    state_dict = torch.load('/disk/liuxb/code/Multi-EMoE/Llama-3.1-8B_pretraining_6_hypernetwork.pth')
-    hypernetwork.load_state_dict(state_dict)
     model, tok = make_main_model(config)
 
     for layer_index in config.single_layer:
