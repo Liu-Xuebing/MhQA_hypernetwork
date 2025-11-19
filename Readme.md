@@ -2,9 +2,9 @@ Settings file:
 config/config.yaml
 
 Training file:
-train.py
+KV_train.py
 
 Inference file:
-inference.py
+KV_inference.py
 
 -------------
