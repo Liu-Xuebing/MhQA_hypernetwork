@@ -4,7 +4,7 @@ from .ExperModel import MoE, ParallelFFNMoE
 
 def make_main_model(config: DictConfig):
     tokenizer = AutoTokenizer.from_pretrained(config.model_name, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(config.model_name, device_map='auto', trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(config.model_name,  device_map="auto", trust_remote_code=True)
     tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.pad_token = tokenizer.eos_token
 

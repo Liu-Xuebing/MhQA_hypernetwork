@@ -35,7 +35,6 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
                         self.data.append([q, a, p])
                         prompt += "Sub-question: {}\nSub-answer: {}\n".format(q, a)
                     self.data.append([data['question'], data['answer'], prompt.strip()])
-
             if self.samples:
                 self.data = random.sample(self.data, k=self.samples)
 
@@ -54,6 +53,7 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
             else:
                 raise AssertionError("Error dataset")
 
+
         else:
             raise AssertionError("Error state")
 
@@ -69,25 +69,9 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
             input = 'Question: {}\nAnswer:'.format(question)
             answer = '{}'.format(answer)
             tok_tuples, tok_sentence = self.tok_tuples(input, answer, passage)
-            return tok_tuples, tok_sentence, question, answer, passage
+            return tok_tuples, tok_sentence
         elif self.status == 'Test':
             question, answers, passage = self.data[idx]
-            # question = question + "?" if question[-1] != "?" else question
-            # question = first_word_cap(question)
-            # prompt_1 = 'Question: {}\nAnswer:'.format(question)
-            # prompt_2 = 'Knowledge:\n{}\nQuestion: {}\nAnswer:'.format(knowledge, question)
-            # prompt_3 = 'Knowledge:\n{}\n{}\nQuestion: {}\nAnswer:'.format(knowledge, instruction, question)
-            # tok_sentence = [self.tok(p['text'], return_tensors="pt") for p in passage]
-            # tok_sentence = [self.tok(knowledge, return_tensors="pt")]
-            # return (self.tok.encode(prompt_1, return_tensors="pt").cuda(),
-            #         prompt_1,
-                    # self.tok.encode(prompt_2, return_tensors="pt").cuda(),
-                    # prompt_2,
-                    # self.tok.encode(prompt_3, return_tensors="pt").cuda(),
-                    # prompt_3,
-                    # [question],
-                    # answers,
-                    # tok_sentence)
             return (question.strip(), answers, passage)
 
 
@@ -122,19 +106,13 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
                                          batch_first=True,
                                          padding_value=-100 if k == "labels" else 0).cuda()
                          for k in tok_tuples[0].keys()}
-        return padded_tokens_wo, tok_sentence, tuples[0][2], tuples[0][3], tuples[0][4]
+        return padded_tokens_wo, tok_sentence
 
 
     def val_collate_fn(self, tuples):
         return (tuples[0][0],
                 [t for t in tuples[0][1]],
                 [t for t in tuples[0][2]])
-                # tuples[0][3],
-                # tuples[0][4],
-                # tuples[0][5],
-                # [t for t in tuples[0][6]],
-                # [t for t in tuples[0][7]],
-                # tuples[0][8])
 
 
 

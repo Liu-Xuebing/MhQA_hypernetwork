@@ -1,14 +1,14 @@
 #model_dir
 model_name: "meta-llama/Llama-3.1-8B"  #meta-llama/Llama-3.1-8B  Qwen/Qwen2.5-7B
-hypernetwork_ckpt: ../Multi-EMoE/{}_{}_hypernetwork.pth
+hypernetwork_ckpt: /data/liuxb/code/Multi-EMoE/{}_{}_hypernetwork.pth
 retrieval_model_ckpt: "intfloat/e5-base-v2"  # intfloat/e5-base-v2, facebook/contriever-msmarco
-decompose_model_ckpt: ../Multi-EMoE/Decomposer/falcon3-1b-{}
+decompose_model_ckpt: /data/liuxb/code/Multi-EMoE/Decomposer/falcon3-1b-HotPot
 
 #dataset
-data_name: musique
-layer_scanning_datasets: ../Multi-EMoE/datasets/pre_training.json
-train_dataset: ../Multi-EMoE/datasets/{}_train.json
-test_dataset: ../Multi-EMoE/datasets/{}_test.json
+data_name: WikiMhQA
+layer_scanning_datasets: /data/liuxb/code/Multi-EMoE/datasets/causal_tracing.json
+train_dataset: /data/liuxb/code/Multi-EMoE/datasets/{}_train.json
+test_dataset: /data/liuxb/code/Multi-EMoE/datasets/{}_test.json
 
 #model
 half: False
@@ -18,11 +18,11 @@ valid_batch_size: 1
 #train
 learning_rate: 1e-4
 learning_rate_min: 1e-6
-single_layer: [6] #Inserting an expert layer
+single_layer: 7 #Inserting an expert layer
 
 #parameter
 embed_feature: 4096  # 3584 if Qwen model, 4096 for llama
 in_feature: 4096
-hid_feature: 4096
+hid_feature: 1024
 out_feature: 4096
-rank: 512
+rank: 128
