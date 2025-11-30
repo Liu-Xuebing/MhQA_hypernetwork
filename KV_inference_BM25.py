@@ -152,8 +152,9 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, decomposer
                     inference_hook.remove()
                     break
 
-                results = retriever.search(subquestion, top_k=1)
+                results = retriever.search(subquestion, top_k=4)
                 factss = [r['doc'] for r in results]
+                print(factss)
 
 
                 for i,fact in enumerate(factss):

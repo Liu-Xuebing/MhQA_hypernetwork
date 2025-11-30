@@ -77,7 +77,7 @@ class NQ_TQA_SQuAD_Dataset(Dataset):
 
 
     def tok_tuples(self, prompt, answer, passage):
-        if self.config.model_name == "meta-llama/Llama-3.1-8B":
+        if self.config.model_name == "meta-llama/Llama-3.1-70B":
             answer = " " + answer + self.tok.eos_token
         elif self.config.model_name == "Qwen/Qwen2.5-7B":
             answer = answer + self.tok.eos_token

@@ -108,7 +108,7 @@ class EnhancedHyperNetwork(nn.Module):
 
 class HyperKVGeneratorFixed(nn.Module):
     def __init__(self, input_dim, hidden_dim, d_model,
-                 num_kv=16):
+                 num_kv):
         super().__init__()
 
         self.pooling_layer = nn.Linear(input_dim, 1)
@@ -141,6 +141,7 @@ class HyperKVGeneratorFixed(nn.Module):
         hidden = self.mlp(pooled)   # [B, hidden_dim]
         K = self.linear_K(hidden).view(B, self.num_kv, -1)
         V = self.linear_V(hidden).view(B, self.num_kv, -1)
+
         return K, V
 
 

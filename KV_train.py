@@ -86,7 +86,8 @@ def train(config, hypernetwork, model, train_loader, optimizer, scheduler):
 def main(config):
     hypernetwork = HyperKVGeneratorFixed(input_dim=config.embed_feature,
                                          hidden_dim=config.hid_feature,
-                                         d_model=config.embed_feature).cuda()
+                                         d_model=config.embed_feature,
+                                         num_kv=config.num_kv).cuda()
     model, tok = make_main_model(config)
     other_params = [p for n, p in hypernetwork.named_parameters()]
 
@@ -103,7 +104,9 @@ def main(config):
     train(config, hypernetwork, model, train_loader, optimizer, scheduler)
 
     torch.save(hypernetwork.state_dict(),
-               config.hypernetwork_ckpt.format(config.model_name.split("/")[-1] + '_' + config.data_name, config.single_layer))
+               config.hypernetwork_ckpt.format(config.model_name.split("/")[-1] + '_' + config.data_name,
+                                               config.single_layer,
+                                               config.num_kv))
 
 
 if __name__ == '__main__':

@@ -98,12 +98,12 @@ def main(config):
     model, tok = make_main_model(config)
     model.eval()
     ppls = []
-    for layer in list(range(32)):
+    for layer in list(range(28)):
         hypernetwork = HyperKVGeneratorFixed(input_dim=config.embed_feature, hidden_dim=config.hid_feature,
                                            d_model=config.embed_feature).cuda()
         other_params = [p for n, p in hypernetwork.named_parameters()]
 
-        train_loader = make_Training_loader(config, tok, samples=None)
+        train_loader = make_Training_loader(config, tok, samples=6000)
 
         optimizer = torch.optim.AdamW([
             {"params": other_params, "lr": 1e-4},  # 主干部分

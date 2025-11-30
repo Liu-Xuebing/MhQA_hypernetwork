@@ -10,10 +10,12 @@ import hydra
 import torch
 import json
 from utils import get_sent_embeddings, retrieve_facts, get_word
+from utils import get_sent_embeddings, retrieve_facts, BM25Retriever
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 import time
 import os
 from KV_train import cross_attention, make_simple_cross_attn_hook
+
 
 metrics = {"EM": [],
            "F1": []}
@@ -125,6 +127,8 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
     print("facts length:", len(facts))
     embs = get_sent_embeddings(facts, retriever, retriever_tok)
 
+
+
     for tuples in tqdm(valid_loader, desc="Valid"):
         question, answers, _ = tuples
         initial_prompt = 'Decompose the following question into sub-questions:\n{}\n'.format(question)
@@ -141,20 +145,21 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     passage_input_token = {k: v.cuda() for k, v in tok(initial_prompt.strip()[split_index:], return_tensors="pt").items()}
                     input_embeds = model.model.embed_tokens(passage_input_token['input_ids'])
                     delta_K, delta_V = hypernetwork(input_embeds)
-                    use_delta_K = mean_fuse(use_delta_K, delta_K)
-                    use_delta_V = mean_fuse(use_delta_V, delta_V)
+                    use_delta_K = fuse_weights_batch(use_delta_K, delta_K)
+                    use_delta_V = fuse_weights_batch(use_delta_V, delta_V)
                     inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                     final_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                     inference_hook.remove()
                     break
 
-                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=1)
+                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=10)
 
                 for i in range(len(fact_ids)):
                     fact = facts[fact_ids[i]]
                     tok_fact = {k: v.cuda() for k, v in tok(fact, return_tensors="pt").items()}
                     input_embeds = model.model.embed_tokens(tok_fact['input_ids'])
                     delta_K, delta_V = hypernetwork(input_embeds)
+
                     if i==0:
                         fact_delta_K = delta_K
                         fact_delta_V = delta_V
@@ -165,13 +170,14 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     use_delta_K = fact_delta_K
                     use_delta_V = fact_delta_V
                 else:
-                    use_delta_K = mean_fuse(use_delta_K, fact_delta_K)
-                    use_delta_V = mean_fuse(use_delta_V, fact_delta_V)
+                    use_delta_K = fuse_weights_batch(use_delta_K, fact_delta_K)
+                    use_delta_V = fuse_weights_batch(use_delta_V, fact_delta_V)
                 target_layer = model.model.layers[config.single_layer]
                 inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                 # base_input = 'Question: {}\nAnswer:'.format(subquestion)
                 base_input = 'Passage: {}\nQuestion: {}\nAnswer:'.format('. '.join([facts[fact_ids[i]] for i in range(len(fact_ids))]), subquestion)
                 base_input_token = {k: v.cuda() for k, v in tok(base_input, return_tensors="pt").items()}
+
                 sub_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                 print(sub_answer)
                 inference_hook.remove()
@@ -180,10 +186,12 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
         except Exception as e:
             final_answer = ''
         print(final_answer)
+
         EM, F1 = cal_EM_F1(final_answer, answers)
         for key, value in zip(metrics.keys(), [EM, F1]):
             metrics[key].append(value)
             print(key, len(metrics[key]), np.mean(metrics[key]) * 100)
+
     return metrics
 
 
@@ -196,9 +204,12 @@ def main(config):
     decomposer_tok = AutoTokenizer.from_pretrained(config.decompose_model_ckpt.format(config.data_name))
 
     hypernetwork = HyperKVGeneratorFixed(input_dim=config.embed_feature, hidden_dim=config.hid_feature,
-                                       d_model=config.embed_feature).cuda()
+                                         d_model=config.embed_feature,
+                                         num_kv=config.num_kv).cuda()
 
-    state_dict = torch.load(config.hypernetwork_ckpt.format(config.model_name.split("/")[-1]+'_'+config.data_name, config.single_layer))
+    state_dict = torch.load(config.hypernetwork_ckpt.format(config.model_name.split("/")[-1]+'_'+config.data_name,
+                                                            config.single_layer,
+                                                            config.num_kv))
     hypernetwork.load_state_dict(state_dict)
 
     model, tok = make_main_model(config)
