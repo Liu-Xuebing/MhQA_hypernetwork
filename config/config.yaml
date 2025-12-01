@@ -24,4 +24,4 @@ single_layer: 9 #Inserting an expert layer
 embed_feature: 4096  # 3584 if Qwen model, 4096 for llama
 in_feature: 4096
 hid_feature: 1024
-num_kv: 16
+num_kv: 1

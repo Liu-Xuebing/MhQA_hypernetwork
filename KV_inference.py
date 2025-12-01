@@ -128,7 +128,6 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
     embs = get_sent_embeddings(facts, retriever, retriever_tok)
 
 
-
     for tuples in tqdm(valid_loader, desc="Valid"):
         question, answers, _ = tuples
         initial_prompt = 'Decompose the following question into sub-questions:\n{}\n'.format(question)
@@ -145,15 +144,14 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     passage_input_token = {k: v.cuda() for k, v in tok(initial_prompt.strip()[split_index:], return_tensors="pt").items()}
                     input_embeds = model.model.embed_tokens(passage_input_token['input_ids'])
                     delta_K, delta_V = hypernetwork(input_embeds)
-                    use_delta_K = fuse_weights_batch(use_delta_K, delta_K)
-                    use_delta_V = fuse_weights_batch(use_delta_V, delta_V)
+                    use_delta_K = mean_fuse(use_delta_K, delta_K)
+                    use_delta_V = mean_fuse(use_delta_V, delta_V)
                     inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                     final_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                     inference_hook.remove()
                     break
 
-                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=10)
-
+                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=12)
                 for i in range(len(fact_ids)):
                     fact = facts[fact_ids[i]]
                     tok_fact = {k: v.cuda() for k, v in tok(fact, return_tensors="pt").items()}
@@ -170,8 +168,8 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     use_delta_K = fact_delta_K
                     use_delta_V = fact_delta_V
                 else:
-                    use_delta_K = fuse_weights_batch(use_delta_K, fact_delta_K)
-                    use_delta_V = fuse_weights_batch(use_delta_V, fact_delta_V)
+                    use_delta_K = mean_fuse(use_delta_K, fact_delta_K)
+                    use_delta_V = mean_fuse(use_delta_V, fact_delta_V)
                 target_layer = model.model.layers[config.single_layer]
                 inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                 # base_input = 'Question: {}\nAnswer:'.format(subquestion)
@@ -186,6 +184,8 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
         except Exception as e:
             final_answer = ''
         print(final_answer)
+
+
 
         EM, F1 = cal_EM_F1(final_answer, answers)
         for key, value in zip(metrics.keys(), [EM, F1]):
