@@ -1,6 +1,6 @@
 # MergePRAG: Orthogonal Merging of Passage-experts for Multi-hop Parametric RAG
 
-This repository contains the official implementation of our paper:
+This repository contains the implementation of our paper:
 
 **MergePRAG: Orthogonal Merging of Passage-experts for Multi-hop Parametric RAG**
 
