@@ -84,37 +84,6 @@ def fuse_weights_batch(A, B):
     return A + B_orth
 
 
-def mean_fuse(A, B):
-    return (A + B) / 2.0
-
-def add_fuse(A, B):
-    return A + B
-
-def concat_fuse(A, B):
-    return torch.cat((A, B), dim=1)
-
-def ties_fuse(A, B, trim_ratio=0.2):
-    # Step 1: Stack A and B
-    tasks = torch.stack([A, B], dim=0)  # shape: (num_tasks, ...)
-    # Step 2: Keep top trim_ratio magnitude values
-    abs_tasks = tasks.abs()
-    flat_abs = abs_tasks.flatten()
-    k = max(int((1 - trim_ratio) * flat_abs.numel()), 1)  # top trim_ratio
-    if k >= flat_abs.numel():
-        threshold = flat_abs.min()  # 保留全部
-    else:
-        threshold = torch.kthvalue(flat_abs, k).values.item()
-    mask = abs_tasks >= threshold  # only keep top trim_ratio
-    # Step 3: Determine sign (γm)
-    signs = torch.sign((tasks.sign() * mask).sum(dim=0))
-    signs[signs == 0] = 1  # tie -> +1
-    # Step 4: Keep only aligned values
-    aligned = tasks * mask
-    aligned = torch.where(aligned.sign() == signs, aligned, torch.zeros_like(aligned))
-    # Step 5: Mean of aligned values
-    fused = aligned.sum(dim=0) / torch.clamp((aligned != 0).sum(dim=0).float(), min=1.0)
-    return fused
-
 
 def valid(config , hypernetwork, model, tok, valid_loader, retriever, decomposer, decomposer_tok):
     facts = []

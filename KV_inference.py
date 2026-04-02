@@ -15,6 +15,7 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 import time
 import os
 from KV_train import cross_attention, make_simple_cross_attn_hook
+from torch.optim import SGD
 
 
 metrics = {"EM": [],
@@ -85,37 +86,6 @@ def fuse_weights_batch(A, B):
     return A + B_orth
 
 
-def mean_fuse(A, B):
-    return (A + B) / 2.0
-
-def add_fuse(A, B):
-    return A + B
-
-def concat_fuse(A, B):
-    return torch.cat((A, B), dim=1)
-
-def ties_fuse(A, B, trim_ratio=0.2):
-    # Step 1: Stack A and B
-    tasks = torch.stack([A, B], dim=0)  # shape: (num_tasks, ...)
-    # Step 2: Keep top trim_ratio magnitude values
-    abs_tasks = tasks.abs()
-    flat_abs = abs_tasks.flatten()
-    k = max(int((1 - trim_ratio) * flat_abs.numel()), 1)  # top trim_ratio
-    if k >= flat_abs.numel():
-        threshold = flat_abs.min()  # 保留全部
-    else:
-        threshold = torch.kthvalue(flat_abs, k).values.item()
-    mask = abs_tasks >= threshold  # only keep top trim_ratio
-    # Step 3: Determine sign (γm)
-    signs = torch.sign((tasks.sign() * mask).sum(dim=0))
-    signs[signs == 0] = 1  # tie -> +1
-    # Step 4: Keep only aligned values
-    aligned = tasks * mask
-    aligned = torch.where(aligned.sign() == signs, aligned, torch.zeros_like(aligned))
-    # Step 5: Mean of aligned values
-    fused = aligned.sum(dim=0) / torch.clamp((aligned != 0).sum(dim=0).float(), min=1.0)
-    return fused
-
 
 def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_tok, decomposer, decomposer_tok):
     facts = []
@@ -144,32 +114,34 @@ def valid(config , hypernetwork, model, tok, valid_loader, retriever, retriever_
                     passage_input_token = {k: v.cuda() for k, v in tok(initial_prompt.strip()[split_index:], return_tensors="pt").items()}
                     input_embeds = model.model.embed_tokens(passage_input_token['input_ids'])
                     delta_K, delta_V = hypernetwork(input_embeds)
-                    use_delta_K = mean_fuse(use_delta_K, delta_K)
-                    use_delta_V = mean_fuse(use_delta_V, delta_V)
+                    delta_K, delta_V = delta_K.detach(), delta_V.detach()
+                    use_delta_K = fuse_weights_batch(use_delta_K, delta_K)
+                    use_delta_V = fuse_weights_batch(use_delta_V, delta_V)
                     inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                     final_answer = model_generation_subanswer(base_input, base_input_token, model, tok)
                     inference_hook.remove()
                     break
 
-                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=12)
+                fact_ids = retrieve_facts(subquestion, embs, retriever, retriever_tok, k=1)
                 for i in range(len(fact_ids)):
                     fact = facts[fact_ids[i]]
                     tok_fact = {k: v.cuda() for k, v in tok(fact, return_tensors="pt").items()}
                     input_embeds = model.model.embed_tokens(tok_fact['input_ids'])
                     delta_K, delta_V = hypernetwork(input_embeds)
+                    delta_K, delta_V = delta_K.detach(), delta_V.detach()
 
                     if i==0:
                         fact_delta_K = delta_K
                         fact_delta_V = delta_V
                     else:
-                        fact_delta_K = mean_fuse(fact_delta_K, delta_K)
-                        fact_delta_V = mean_fuse(fact_delta_V, delta_V)
+                        fact_delta_K = fuse_weights_batch(fact_delta_K, delta_K, init='t2')
+                        fact_delta_V = fuse_weights_batch(fact_delta_V, delta_V)
                 if ixx == 0:
                     use_delta_K = fact_delta_K
                     use_delta_V = fact_delta_V
                 else:
-                    use_delta_K = mean_fuse(use_delta_K, fact_delta_K)
-                    use_delta_V = mean_fuse(use_delta_V, fact_delta_V)
+                    use_delta_K = fuse_weights_batch(use_delta_K, fact_delta_K)
+                    use_delta_V = fuse_weights_batch(use_delta_V, fact_delta_V)
                 target_layer = model.model.layers[config.single_layer]
                 inference_hook = target_layer.register_forward_hook(make_simple_cross_attn_hook(use_delta_K, use_delta_V))
                 # base_input = 'Question: {}\nAnswer:'.format(subquestion)
