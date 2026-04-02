@@ -1,5 +1,3 @@
-from sympy.abc import delta
-
 from data.base import make_Validation_loader
 import numpy as np
 from tqdm import tqdm, trange
@@ -9,11 +7,8 @@ from MOE_model.hypernetwork import HyperKVGeneratorFixed
 import hydra
 import torch
 import json
-from utils import get_sent_embeddings, retrieve_facts, get_word
 from utils import get_sent_embeddings, retrieve_facts, BM25Retriever
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-import time
-import os
 from KV_train import cross_attention, make_simple_cross_attn_hook
 
 metrics = {"EM": [],

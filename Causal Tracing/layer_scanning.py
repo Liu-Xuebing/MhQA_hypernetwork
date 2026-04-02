@@ -118,8 +118,8 @@ def main(config):
         del optimizer
         del scheduler
         del train_loader
-        torch.cuda.empty_cache()  # 把不再使用的缓存显存释放
-        gc.collect()  # Python 垃圾回收
+        torch.cuda.empty_cache()
+        gc.collect()
     print(ppls)
 
 
