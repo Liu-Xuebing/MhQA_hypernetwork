@@ -1,0 +1,64 @@
+Your task is to convert a given question and its related facts into a multi-step reasoning chain.
+
+Requirements: Each step in the reasoning chain must:
+- Use one fact from the input facts, do not combine, summarize, or fabricate facts; each fact must be used as-is from the input.
+- Generate a "Sub-question"  and a short answer "Sub-answer"
+- The answer "Sub-answer" must be directly derivable from the corresponding Fact
+
+Examples:
+Question: Do both directors of films Malva (1924 Film) and Sur Le Rythme have the same nationality?,
+Facts: ["Malva (1924 film): Malva is a 1924 German silent film directed by Robert Dinesen and starring Lya De Putti, Hans Adalbert Schlettow and Ernst Rückert.", "Sur le rythme: Sur le rythme is a Canadian film by director Charles-Olivier Michaud, released on 10 August 2011.", "Robert Dinesen: Robert Theodor Camillo Dinesen (23 October 1874 – 8 March 1972) was a Danish film actor and director.", "Charles-Olivier Michaud: Charles-Olivier Michaud is a Canadian writer, director and producer from Saint-Romuald, Quebec."]
+[
+  {{
+    "Sub-question": "Who directed the film Malva (1924)?",
+    "Fact": "Malva (1924 film): Malva is a 1924 German silent film directed by Robert Dinesen and starring Lya De Putti, Hans Adalbert Schlettow and Ernst Rückert.",
+    "Sub-answer": "Robert Dinesen"
+  }},
+  {{
+    "Sub-question": "Who directed the film Sur le rythme?",
+    "Fact": "Sur le rythme: Sur le rythme is a Canadian film by director Charles-Olivier Michaud, released on 10 August 2011.",
+    "Sub-answer": "Charles-Olivier Michaud"
+  }},
+  {{
+    "Sub-question": "What was the nationality of Robert Dinesen?",
+    "Fact": "Robert Dinesen: Robert Theodor Camillo Dinesen (23 October 1874 – 8 March 1972) was a Danish film actor and director.",
+    "Sub-answer": "Danish"
+  }},
+  {{
+    "Sub-question": "What was the nationality of Charles-Olivier Michaud?",
+    "Fact": "Charles-Olivier Michaud: Charles-Olivier Michaud is a Canadian writer, director and producer from Saint-Romuald, Quebec.",
+    "Sub-answer": "Canadian"
+  }}]
+
+Question: "When is the director of film Waiter, Scarper! 's birthday?",
+Facts: ["Waiter, Scarper!: is a 1981 Czechoslovak comedy film directed by Ladislav Smoljak.", "Ladislav Smoljak: Ladislav Smoljak (9 December 1931 – 6 June 2010) was a Czech film and theater director, actor and screenwriter."],
+Output: [
+  {{
+    "Sub-question": "Who directed the film Waiter, Scarper!?",
+    "Fact": "Waiter, Scarper!: is a 1981 Czechoslovak comedy film directed by Ladislav Smoljak.",
+    "Sub-answer": "Ladislav Smoljak"
+  }},
+  {{
+    "Sub-question": "When was Ladislav Smoljak, the director of Waiter, Scarper!, born?",
+    "Fact": "Ladislav Smoljak: Ladislav Smoljak (9 December 1931 – 6 June 2010) was a Czech film and theater director, actor and screenwriter.",
+    "Sub-answer": "9 December 1931"
+  }}]
+
+Question: "Which film was released earlier, J'ai Rencontré Le Père Noël or Idle Tongues?",
+Facts: ["Idle Tongues: Idle Tongues is a lost 1924 silent film drama directed by Lambert Hillyer and produced by Thomas H. Ince, one of his last efforts before his death that year.", "J'ai Rencontré Le Père Noël: J'ai rencontré le Père Noël( English: I Met Father Christmas) is a 1984 French science fiction fantasy film directed by Christian Gion and co-written with Didier Kaminka."],
+Output: [
+  {{
+    "Sub-question": "When was the film Idle Tongues released?",
+    "Fact": "Idle Tongues: Idle Tongues is a lost 1924 silent film drama directed by Lambert Hillyer and produced by Thomas H. Ince, one of his last efforts before his death that year.",
+    "Sub-answer": "1924"
+  }},
+  {{
+    "Sub-question": "When was the film J'ai Rencontré Le Père Noël released?",
+    "Fact": "J'ai Rencontré Le Père Noël: J'ai rencontré le Père Noël (English: I Met Father Christmas) is a 1984 French science fiction fantasy film directed by Christian Gion and co-written with Didier Kaminka.",
+    "Sub-answer": "1984"
+  }}]
+
+
+Question: {question}
+Facts: {facts}
+Output:

@@ -1,0 +1,66 @@
+Your task is to convert a given question and its related facts into a multi-step reasoning chain.
+
+Requirements: Each step in the reasoning chain must:
+- Use one fact from the input facts, do not combine, summarize, or fabricate facts; each fact must be used as-is from the input.
+- Generate a "Sub-question"  and a short answer "Sub-answer"
+- The answer "Sub-answer" must be directly derivable from the corresponding Fact
+
+Examples:
+Question: "Which brand of Tennessee whiskey distilled in a dry county was allegedly used by \"Super Joe\" Charboneau as an anesthetic when he fixed a broken nose with a pair of pliers?",
+Facts: ["1980 Cleveland Indians season: \"Super Joe\" Charboneau made his debut with the Indians in 1980, splitting time between left field and designated hitter.", "1980 Cleveland Indians season: His tendency to dye his hair unnatural colors, open beer bottles with his eye socket, and drink beer with a straw through his nose, and other stories that emerged about how he did his own dental work and fixed a broken nose with a pair of pliers and a few shots of Jack Daniel's whiskey, stood out in 1980.", "Jack Daniel's: Jack Daniel's is a brand of Tennessee whiskey and the top selling American whiskey in the world.", "Jack Daniel's: Despite being the location of a major operational distillery, Jack Daniel's home county of Moore is a dry county, so the product is not available for purchase at stores or restaurants within the county."]
+Output: [
+  {{
+    "Sub-question": "Which Cleveland Indians player was nicknamed \"Super Joe\" in 1980?",
+    "Fact": "1980 Cleveland Indians season: \"Super Joe\" Charboneau made his debut with the Indians in 1980, splitting time between left field and designated hitter.",
+    "Sub-answer": "Joe Charboneau"
+  }},
+  {{
+    "Sub-question": "What whiskey did Joe Charboneau reportedly use when fixing his broken nose with pliers?",
+    "Fact": "1980 Cleveland Indians season: His tendency to dye his hair unnatural colors, open beer bottles with his eye socket, and drink beer with a straw through his nose, and other stories that emerged about how he did his own dental work and fixed a broken nose with a pair of pliers and a few shots of Jack Daniel's whiskey, stood out in 1980.",
+    "Sub-answer": "Jack Daniel's"
+  }},
+  {{
+    "Sub-question": "What type of whiskey is Jack Daniel's?",
+    "Fact": "Jack Daniel's: Jack Daniel's is a brand of Tennessee whiskey and the top selling American whiskey in the world.",
+    "Sub-answer": "Tennessee whiskey"
+  }},
+  {{
+    "Sub-question": "Where is Jack Daniel's distilled?",
+    "Fact": "Jack Daniel's: Despite being the location of a major operational distillery, Jack Daniel's home county of Moore is a dry county, so the product is not available for purchase at stores or restaurants within the county.",
+    "Sub-answer": "Moore County"
+  }}
+]
+
+Question: "Are René Clément and David Lean both film directors?",
+Facts: ["René Clément: René Clément (] ; 18 March 1913 – 17 March 1996) was a French film director and screenwriter.", "David Lean: Sir David Lean, CBE (25 March 190816 April 1991) was an English film director, producer, screenwriter and editor, responsible for large-scale epics such as \"The Bridge on the River Kwai\" (1957), \"Lawrence of Arabia\" (1962) and \"Doctor Zhivago\" (1965)."]
+Output: [
+  {{
+    "Sub-question": "Was René Clément a film director?",
+    "Fact": "René Clément: René Clément (18 March 1913 – 17 March 1996) was a French film director and screenwriter.",
+    "Sub-answer": "Yes"
+  }},
+  {{
+    "Sub-question": "Was David Lean a film director?",
+    "Fact": "David Lean: Sir David Lean, CBE (25 March 1908 – 16 April 1991) was an English film director, producer, screenwriter and editor, responsible for large-scale epics such as 'The Bridge on the River Kwai' (1957), 'Lawrence of Arabia' (1962) and 'Doctor Zhivago' (1965).",
+    "Sub-answer": "Yes"
+  }}
+]
+
+Question: "When did the civilisation start that Desalpar Gunthli was a part of?",
+Facts: ["Desalpar Gunthli: Desalpar Gunthli is a village and site belonging to Indus Valley Civilisation located at Nakhtrana Taluka, Kutch District, Gujarat, India.", "Indus Valley Civilisation: The Indus Valley Civilisation (IVC) or Harappan Civilisation was a Bronze Age civilisation (3300–1300 BCE; mature period 2600–1900 BCE) mainly in the northwestern regions of South Asia, extending from what today is northeast Afghanistan to Pakistan and northwest India."]
+Output: [
+  {{
+    "Sub-question": "Which civilisation was Desalpar Gunthli a part of?",
+    "Fact": "Desalpar Gunthli: Desalpar Gunthli is a village and site belonging to Indus Valley Civilisation located at Nakhtrana Taluka, Kutch District, Gujarat, India.",
+    "Sub-answer": "Indus Valley Civilisation"
+  }},
+  {{
+    "Sub-question": "When did the Indus Valley Civilisation exist?",
+    "Fact": "Indus Valley Civilisation: The Indus Valley Civilisation (IVC) or Harappan Civilisation was a Bronze Age civilisation (3300–1300 BCE; mature period 2600–1900 BCE) mainly in the northwestern regions of South Asia, extending from what today is northeast Afghanistan to Pakistan and northwest India.",
+    "Sub-answer": "3300–1300 BCE"
+  }}
+]
+
+Question: {question}
+Facts: {facts}
+Output:
