@@ -6,7 +6,7 @@ You can also build your own datasets using the scripts under the following path:
 data/build_datasets
 ```
 
-This module uses prompt engineering with large language models to generate sub-questions and corresponding answers for WikiMHQA and HotpotQA.
+This module uses prompt engineering with large language models to generate sub-questions and corresponding answers for multi-hop QA datasets.
 
 The generated datasets are mainly used to train the following modules:
 
